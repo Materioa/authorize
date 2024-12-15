@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materio - Admin</title>
+    <link rel="stylesheet" href="/style.css">
+    <link href="https://db.onlinewebfonts.com/c/66761cc137992e659f355bf50b1307cc?family=ApexNew-Medium"
+        rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+    <script src="https://kit.fontawesome.com/586c3eafed.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<header>Materio Admin</header>
+
+<div id="loginSection">
+    <h2>Login</h2>
+    <form id="loginForm">
+        <div class="input-container">
+            <i class="fa-solid fa-envelope"></i>
+            <input type="email" id="email" name="email"><br><br>
+        </div>
+
+        <div class="input-container">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="password" name="password"><br><br>
+        </div>
+
+        <button type="submit">Login</button>
+        <p id="message" style="color: red;"></p>
+    </form>
+</div>
+
+<div id="specialKeySection" style="display: none;">
+    <h2>Generate Keys</h2>
+    <button id="generateKey">Create Key</button>
+    <button id="generateBulkKeys">Create Multiple Keys</button>
+
+    <div id="keyDisplay" class="key-display">
+    </div>
+</div>
+
+<script>
+    document.getElementById("loginForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        const response = await fetch('/.netlify/functions/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.privilege === "admin") {
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("specialKeySection").style.display = "block";
+        } else {
+            document.getElementById("message").textContent = result.message || "Unauthorized access.";
+        }
+    });
+
+    // Generate Single Key
+    document.getElementById("generateKey").addEventListener("click", async () => {
+        const response = await fetch('/.netlify/functions/generateKeys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bulk: false })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById("keyDisplay").innerHTML = `
+                    <p>Generated Key: <strong>${result.keys[0]}</strong></p>`;
+        } else {
+            document.getElementById("keyDisplay").innerHTML = `
+                    <p>Error: ${result.message}</p>`;
+        }
+    });
+
+    document.getElementById("generateBulkKeys").addEventListener("click", async () => {
+        const bulkCount = prompt("Enter the number of keys to generate:");
+        if (!bulkCount || isNaN(bulkCount) || bulkCount <= 0) {
+            alert("Please enter a valid number.");
+            return;
+        }
+
+        const response = await fetch('/.netlify/functions/generateKeys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bulk: true, count: parseInt(bulkCount) })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById("keyDisplay").innerHTML = `
+                    <p>${bulkCount} keys generated and stored.</p>`;
+        } else {
+            document.getElementById("keyDisplay").innerHTML = `
+                    <p>Error: ${result.message}</p>`;
+        }
+    });
+</script>
+</body>
+
+</html>
